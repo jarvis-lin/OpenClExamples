@@ -58,7 +58,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef __APPLE__
 #include <OpenCL/opencl.h>
+#else
+#include <CL/cl.h>
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -114,7 +119,22 @@ int main(int argc, char** argv)
     // Connect to a compute device
     //
     int gpu = 1;
-    err = clGetDeviceIDs(NULL, gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+
+    cl_uint numPlatforms;
+    cl_platform_id platformID[10];
+    err = clGetPlatformIDs(10, platformID, &numPlatforms);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to get platform count");
+        return EXIT_FAILURE;
+    }
+    else if(numPlatforms == 0)
+    {
+        printf("Error: Failed to find a platform to support OpenCL on this device");
+        return EXIT_FAILURE;
+    }
+
+    err = clGetDeviceIDs(platformID[0], gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
